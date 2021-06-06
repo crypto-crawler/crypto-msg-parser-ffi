@@ -1,7 +1,7 @@
 /* Licensed under Apache-2.0 */
 
-#ifndef CRYPTO_CRAWLER_H_
-#define CRYPTO_CRAWLER_H_
+#ifndef CRYPTO_MSG_PARSER_H_
+#define CRYPTO_MSG_PARSER_H_
 
 /* Generated with cbindgen:0.16.0 */
 
@@ -49,4 +49,4 @@ const char *parse_funding_rate(const char *exchange, enum MarketType market_type
  */
 void deallocate_string(const char *pointer);
 
-#endif /* CRYPTO_CRAWLER_H_ */
+#endif /* CRYPTO_MSG_PARSER_H_ */
