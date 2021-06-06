@@ -28,12 +28,21 @@ pub extern "C" fn parse_trade(
     };
     let msg = msg_c_str.to_str().unwrap();
 
-    if let Ok(trades) = crypto_msg_parser::parse_trade(exchange, market_type, msg) {
-        let text = serde_json::to_string(&trades).unwrap();
-        let raw = CString::new(text).unwrap();
-        raw.into_raw() as *const c_char
-    } else {
-        std::ptr::null()
+    let result = std::panic::catch_unwind(|| {
+        if let Ok(trades) = crypto_msg_parser::parse_trade(exchange, market_type, msg) {
+            let text = serde_json::to_string(&trades).unwrap();
+            let raw = CString::new(text).unwrap();
+            raw.into_raw() as *const c_char
+        } else {
+            std::ptr::null()
+        }
+    });
+    match result {
+        Ok(ptr) => ptr,
+        Err(err) => {
+            eprintln!("{:?}", err);
+            std::ptr::null()
+        }
     }
 }
 
@@ -58,12 +67,21 @@ pub extern "C" fn parse_l2(
     };
     let msg = msg_c_str.to_str().unwrap();
 
-    if let Ok(orderbooks) = crypto_msg_parser::parse_l2(exchange, market_type, msg) {
-        let text = serde_json::to_string(&orderbooks).unwrap();
-        let raw = CString::new(text).unwrap();
-        raw.into_raw() as *const c_char
-    } else {
-        std::ptr::null()
+    let result = std::panic::catch_unwind(|| {
+        if let Ok(orderbooks) = crypto_msg_parser::parse_l2(exchange, market_type, msg) {
+            let text = serde_json::to_string(&orderbooks).unwrap();
+            let raw = CString::new(text).unwrap();
+            raw.into_raw() as *const c_char
+        } else {
+            std::ptr::null()
+        }
+    });
+    match result {
+        Ok(ptr) => ptr,
+        Err(err) => {
+            eprintln!("{:?}", err);
+            std::ptr::null()
+        }
     }
 }
 
@@ -88,12 +106,21 @@ pub extern "C" fn parse_funding_rate(
     };
     let msg = msg_c_str.to_str().unwrap();
 
-    if let Ok(rates) = crypto_msg_parser::parse_funding_rate(exchange, market_type, msg) {
-        let text = serde_json::to_string(&rates).unwrap();
-        let raw = CString::new(text).unwrap();
-        raw.into_raw() as *const c_char
-    } else {
-        std::ptr::null()
+    let result = std::panic::catch_unwind(|| {
+        if let Ok(rates) = crypto_msg_parser::parse_funding_rate(exchange, market_type, msg) {
+            let text = serde_json::to_string(&rates).unwrap();
+            let raw = CString::new(text).unwrap();
+            raw.into_raw() as *const c_char
+        } else {
+            std::ptr::null()
+        }
+    });
+    match result {
+        Ok(ptr) => ptr,
+        Err(err) => {
+            eprintln!("{:?}", err);
+            std::ptr::null()
+        }
     }
 }
 
@@ -141,6 +168,7 @@ mod tests {
             trade.market_type,
             crypto_msg_parser::MarketType::InverseSwap
         );
+        assert_eq!(trade.msg_type, crypto_msg_parser::MessageType::Trade);
         assert_eq!(trade.price, 58570.1);
         assert!(approx_eq!(
             f64,
@@ -180,14 +208,16 @@ mod tests {
             orderbook.market_type,
             crypto_msg_parser::MarketType::InverseSwap
         );
+        assert_eq!(orderbook.msg_type, crypto_msg_parser::MessageType::L2Event);
         assert_eq!(orderbook.asks.len(), 2);
         assert_eq!(orderbook.bids.len(), 2);
         assert!(!orderbook.snapshot);
         assert_eq!(orderbook.timestamp, 1622370862553);
 
         assert_eq!(orderbook.bids[0].price, 35365.9);
-
+        assert_eq!(orderbook.bids[0].quantity_contract, Some(1400.0));
         assert_eq!(orderbook.asks[0].price, 35817.8);
+        assert_eq!(orderbook.asks[0].quantity_contract, Some(7885.0));
 
         deallocate_string(json_ptr);
     }
@@ -215,6 +245,7 @@ mod tests {
 
         assert_eq!(rate.exchange, "binance");
         assert_eq!(rate.market_type, crypto_msg_parser::MarketType::InverseSwap);
+        assert_eq!(rate.msg_type, crypto_msg_parser::MessageType::FundingRate);
         assert_eq!(rate.pair, "BTC/USD".to_string());
         assert_eq!(rate.funding_rate, 0.00073689);
         assert_eq!(rate.funding_time, 1617321600000);
