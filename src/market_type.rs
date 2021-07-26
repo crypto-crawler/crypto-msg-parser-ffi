@@ -21,8 +21,8 @@ pub enum MarketType {
 
 impl MarketType {
     // Converts C MarketType to Rust MarketType
-    pub fn to_rust(&self) -> crypto_msg_parser::MarketType {
-        match *self {
+    pub fn to_rust(self) -> crypto_msg_parser::MarketType {
+        match self {
             MarketType::Spot => crypto_msg_parser::MarketType::Spot,
             MarketType::LinearFuture => crypto_msg_parser::MarketType::LinearFuture,
             MarketType::InverseFuture => crypto_msg_parser::MarketType::InverseFuture,

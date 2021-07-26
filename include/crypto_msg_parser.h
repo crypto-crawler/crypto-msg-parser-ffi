@@ -37,7 +37,10 @@ const char *parse_trade(const char *exchange, enum MarketType market_type, const
 /**
  * Parse a raw level2 orderbook message into a Vec<OrderBookMsg> and then convert to a JSON string.
  */
-const char *parse_l2(const char *exchange, enum MarketType market_type, const char *msg);
+const char *parse_l2(const char *exchange,
+                     enum MarketType market_type,
+                     const char *msg,
+                     long long timestamp);
 
 /**
  * Parse a raw funding rate message into a Vec<FundingRateMsg> and then convert to a JSON string.

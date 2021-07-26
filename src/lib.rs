@@ -4,7 +4,7 @@ pub use market_type::*;
 
 use std::{
     ffi::{CStr, CString},
-    os::raw::c_char,
+    os::raw::{c_char, c_longlong},
 };
 
 /// Parse a raw trade message into a Vec<TradeMsg> and then convert to a JSON string.
@@ -52,6 +52,7 @@ pub extern "C" fn parse_l2(
     exchange: *const c_char,
     market_type: MarketType,
     msg: *const c_char,
+    timestamp: c_longlong,
 ) -> *const c_char {
     let exchange_c_str = unsafe {
         debug_assert!(!exchange.is_null());
@@ -67,8 +68,16 @@ pub extern "C" fn parse_l2(
     };
     let msg = msg_c_str.to_str().unwrap();
 
+    let timestamp_rust = if timestamp <= 0 {
+        None
+    } else {
+        Some(timestamp as i64)
+    };
+
     let result = std::panic::catch_unwind(|| {
-        if let Ok(orderbooks) = crypto_msg_parser::parse_l2(exchange, market_type, msg) {
+        if let Ok(orderbooks) =
+            crypto_msg_parser::parse_l2(exchange, market_type, msg, timestamp_rust)
+        {
             let text = serde_json::to_string(&orderbooks).unwrap();
             let raw = CString::new(text).unwrap();
             raw.into_raw() as *const c_char
@@ -189,7 +198,12 @@ mod tests {
             let exchange = CString::new("binance").unwrap();
             let raw_msg = CString::new(r#"{"stream":"btcusd_perp@depth@100ms","data":{"e":"depthUpdate","E":1622370862564,"T":1622370862553,"s":"BTCUSD_PERP","ps":"BTCUSD","U":127559587191,"u":127559588177,"pu":127559587113,"b":[["35365.9","1400"],["35425.8","561"]],"a":[["35817.8","7885"],["35818.7","307"]]}}"#).unwrap();
 
-            let json_ptr = parse_l2(exchange.as_ptr(), MarketType::InverseSwap, raw_msg.as_ptr());
+            let json_ptr = parse_l2(
+                exchange.as_ptr(),
+                MarketType::InverseSwap,
+                raw_msg.as_ptr(),
+                0,
+            );
             let json_c_str = unsafe {
                 debug_assert!(!json_ptr.is_null());
                 CStr::from_ptr(json_ptr)
@@ -214,8 +228,8 @@ mod tests {
         assert!(!orderbook.snapshot);
         assert_eq!(orderbook.timestamp, 1622370862553);
 
-        assert_eq!(orderbook.bids[0].price, 35365.9);
-        assert_eq!(orderbook.bids[0].quantity_contract, Some(1400.0));
+        assert_eq!(orderbook.bids[0].price, 35425.8);
+        assert_eq!(orderbook.bids[0].quantity_contract, Some(561.0));
         assert_eq!(orderbook.asks[0].price, 35817.8);
         assert_eq!(orderbook.asks[0].quantity_contract, Some(7885.0));
 
