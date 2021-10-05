@@ -2,6 +2,7 @@
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum MarketType {
+    Unknown,
     Spot,
     LinearFuture,
     InverseFuture,
@@ -23,6 +24,7 @@ impl MarketType {
     // Converts C MarketType to Rust MarketType
     pub fn to_rust(self) -> crypto_msg_parser::MarketType {
         match self {
+            MarketType::Unknown => crypto_msg_parser::MarketType::Unknown,
             MarketType::Spot => crypto_msg_parser::MarketType::Spot,
             MarketType::LinearFuture => crypto_msg_parser::MarketType::LinearFuture,
             MarketType::InverseFuture => crypto_msg_parser::MarketType::InverseFuture,
@@ -40,6 +42,7 @@ impl MarketType {
     // Converts Rust MarketType to C MarketType
     pub fn from_rust(market_type: crypto_msg_parser::MarketType) -> Self {
         match market_type {
+            crypto_msg_parser::MarketType::Unknown => MarketType::Unknown,
             crypto_msg_parser::MarketType::Spot => MarketType::Spot,
             crypto_msg_parser::MarketType::LinearFuture => MarketType::LinearFuture,
             crypto_msg_parser::MarketType::InverseFuture => MarketType::InverseFuture,

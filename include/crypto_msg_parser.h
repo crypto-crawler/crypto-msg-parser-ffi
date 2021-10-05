@@ -16,6 +16,7 @@
  * Market type.
  */
 typedef enum MarketType {
+    Unknown,
     Spot,
     LinearFuture,
     InverseFuture,
