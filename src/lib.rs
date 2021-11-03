@@ -228,8 +228,8 @@ mod tests {
         assert!(!orderbook.snapshot);
         assert_eq!(orderbook.timestamp, 1622370862553);
 
-        assert_eq!(orderbook.bids[0].price, 35425.8);
-        assert_eq!(orderbook.bids[0].quantity_contract, Some(561.0));
+        assert_eq!(orderbook.bids[0].price, 35365.9);
+        assert_eq!(orderbook.bids[0].quantity_contract, Some(1400.0));
         assert_eq!(orderbook.asks[0].price, 35817.8);
         assert_eq!(orderbook.asks[0].quantity_contract, Some(7885.0));
 
