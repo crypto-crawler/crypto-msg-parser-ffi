@@ -1,11 +1,68 @@
-#![allow(clippy::not_unsafe_ptr_arg_deref)]
-mod market_type;
-pub use market_type::*;
+use crypto_market_type::MarketType;
+use crypto_msg_type::MessageType;
 
 use std::{
     ffi::{CStr, CString},
     os::raw::{c_char, c_longlong},
 };
+
+/// Extract the symbol from the message.
+#[no_mangle]
+pub extern "C" fn extract_symbol(
+    exchange: *const c_char,
+    market_type: MarketType,
+    msg: *const c_char,
+) -> *const c_char {
+    let exchange_rust = unsafe {
+        debug_assert!(!exchange.is_null());
+        CStr::from_ptr(exchange).to_str().unwrap()
+    };
+    let msg_rust = unsafe {
+        debug_assert!(!msg.is_null());
+        CStr::from_ptr(msg).to_str().unwrap()
+    };
+
+    let result = std::panic::catch_unwind(|| {
+        if let Some(symbol) =
+            crypto_msg_parser::extract_symbol(exchange_rust, market_type, msg_rust)
+        {
+            let text = serde_json::to_string(&symbol).unwrap();
+            let raw = CString::new(text).unwrap();
+            raw.into_raw() as *const c_char
+        } else {
+            std::ptr::null()
+        }
+    });
+    match result {
+        Ok(ptr) => ptr,
+        Err(err) => {
+            eprintln!("{:?}", err);
+            std::ptr::null()
+        }
+    }
+}
+
+/// Infer the message type from the message.
+pub fn get_msg_type(exchange: *const c_char, msg: *const c_char) -> MessageType {
+    let exchange_rust = unsafe {
+        debug_assert!(!exchange.is_null());
+        CStr::from_ptr(exchange).to_str().unwrap()
+    };
+    let msg_rust = unsafe {
+        debug_assert!(!msg.is_null());
+        CStr::from_ptr(msg).to_str().unwrap()
+    };
+
+    let result =
+        std::panic::catch_unwind(|| crypto_msg_parser::get_msg_type(exchange_rust, msg_rust));
+    match result {
+        Ok(msg_type) => msg_type,
+        Err(err) => {
+            eprintln!("{:?}", err);
+            MessageType::Other
+        }
+    }
+}
 
 /// Parse a raw trade message into a Vec<TradeMsg> and then convert to a JSON string.
 #[no_mangle]
@@ -14,22 +71,17 @@ pub extern "C" fn parse_trade(
     market_type: MarketType,
     msg: *const c_char,
 ) -> *const c_char {
-    let exchange_c_str = unsafe {
+    let exchange_rust = unsafe {
         debug_assert!(!exchange.is_null());
-        CStr::from_ptr(exchange)
+        CStr::from_ptr(exchange).to_str().unwrap()
     };
-    let exchange = exchange_c_str.to_str().unwrap();
-
-    let market_type = market_type.to_rust();
-
-    let msg_c_str = unsafe {
+    let msg_rust = unsafe {
         debug_assert!(!msg.is_null());
-        CStr::from_ptr(msg)
+        CStr::from_ptr(msg).to_str().unwrap()
     };
-    let msg = msg_c_str.to_str().unwrap();
 
     let result = std::panic::catch_unwind(|| {
-        if let Ok(trades) = crypto_msg_parser::parse_trade(exchange, market_type, msg) {
+        if let Ok(trades) = crypto_msg_parser::parse_trade(exchange_rust, market_type, msg_rust) {
             let text = serde_json::to_string(&trades).unwrap();
             let raw = CString::new(text).unwrap();
             raw.into_raw() as *const c_char
@@ -54,19 +106,14 @@ pub extern "C" fn parse_l2(
     msg: *const c_char,
     timestamp: c_longlong,
 ) -> *const c_char {
-    let exchange_c_str = unsafe {
+    let exchange_rust = unsafe {
         debug_assert!(!exchange.is_null());
-        CStr::from_ptr(exchange)
+        CStr::from_ptr(exchange).to_str().unwrap()
     };
-    let exchange = exchange_c_str.to_str().unwrap();
-
-    let market_type = market_type.to_rust();
-
-    let msg_c_str = unsafe {
+    let msg_rust = unsafe {
         debug_assert!(!msg.is_null());
-        CStr::from_ptr(msg)
+        CStr::from_ptr(msg).to_str().unwrap()
     };
-    let msg = msg_c_str.to_str().unwrap();
 
     let timestamp_rust = if timestamp <= 0 {
         None
@@ -76,7 +123,7 @@ pub extern "C" fn parse_l2(
 
     let result = std::panic::catch_unwind(|| {
         if let Ok(orderbooks) =
-            crypto_msg_parser::parse_l2(exchange, market_type, msg, timestamp_rust)
+            crypto_msg_parser::parse_l2(exchange_rust, market_type, msg_rust, timestamp_rust)
         {
             let text = serde_json::to_string(&orderbooks).unwrap();
             let raw = CString::new(text).unwrap();
@@ -101,22 +148,19 @@ pub extern "C" fn parse_funding_rate(
     market_type: MarketType,
     msg: *const c_char,
 ) -> *const c_char {
-    let exchange_c_str = unsafe {
+    let exchange_rust = unsafe {
         debug_assert!(!exchange.is_null());
-        CStr::from_ptr(exchange)
+        CStr::from_ptr(exchange).to_str().unwrap()
     };
-    let exchange = exchange_c_str.to_str().unwrap();
-
-    let market_type = market_type.to_rust();
-
-    let msg_c_str = unsafe {
+    let msg_rust = unsafe {
         debug_assert!(!msg.is_null());
-        CStr::from_ptr(msg)
+        CStr::from_ptr(msg).to_str().unwrap()
     };
-    let msg = msg_c_str.to_str().unwrap();
 
     let result = std::panic::catch_unwind(|| {
-        if let Ok(rates) = crypto_msg_parser::parse_funding_rate(exchange, market_type, msg) {
+        if let Ok(rates) =
+            crypto_msg_parser::parse_funding_rate(exchange_rust, market_type, msg_rust)
+        {
             let text = serde_json::to_string(&rates).unwrap();
             let raw = CString::new(text).unwrap();
             raw.into_raw() as *const c_char
@@ -146,7 +190,7 @@ pub extern "C" fn deallocate_string(pointer: *const c_char) {
 
 #[cfg(test)]
 mod tests {
-    use crate::MarketType;
+    use crypto_market_type::MarketType;
 
     use super::{deallocate_string, parse_funding_rate, parse_l2, parse_trade};
     use float_cmp::approx_eq;
