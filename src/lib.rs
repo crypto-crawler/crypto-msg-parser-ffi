@@ -44,7 +44,8 @@ pub extern "C" fn extract_symbol(
 }
 
 /// Infer the message type from the message.
-pub fn get_msg_type(exchange: *const c_char, msg: *const c_char) -> MessageType {
+#[no_mangle]
+pub extern "C" fn get_msg_type(exchange: *const c_char, msg: *const c_char) -> MessageType {
     let exchange_rust = unsafe {
         debug_assert!(!exchange.is_null());
         CStr::from_ptr(exchange).to_str().unwrap()
@@ -194,16 +195,16 @@ mod tests {
     use crypto_market_type::MarketType;
     use crypto_msg_type::MessageType;
 
-    use super::{deallocate_string, parse_funding_rate, parse_l2, parse_trade};
+    use super::{deallocate_string, get_msg_type, parse_funding_rate, parse_l2, parse_trade};
     use float_cmp::approx_eq;
     use std::ffi::{CStr, CString};
 
     #[test]
     fn test_parse_trade() {
-        let (json_ptr, json_str) = {
-            let exchange = CString::new("binance").unwrap();
-            let raw_msg = CString::new(r#"{"stream":"btcusd_perp@aggTrade","data":{"e":"aggTrade","E":1616201883458,"a":41045788,"s":"BTCUSD_PERP","p":"58570.1","q":"58","f":91864326,"l":91864327,"T":1616201883304,"m":true}}"#).unwrap();
+        let exchange = CString::new("binance").unwrap();
+        let raw_msg = CString::new(r#"{"stream":"btcusd_perp@aggTrade","data":{"e":"aggTrade","E":1616201883458,"a":41045788,"s":"BTCUSD_PERP","p":"58570.1","q":"58","f":91864326,"l":91864327,"T":1616201883304,"m":true}}"#).unwrap();
 
+        let (json_ptr, json_str) = {
             let json_ptr =
                 parse_trade(exchange.as_ptr(), MarketType::InverseSwap, raw_msg.as_ptr());
             let json_c_str = unsafe {
@@ -221,6 +222,10 @@ mod tests {
         assert_eq!(trade.exchange, "binance");
         assert_eq!(trade.market_type, MarketType::InverseSwap);
         assert_eq!(trade.msg_type, MessageType::Trade);
+        assert_eq!(
+            MessageType::Trade,
+            get_msg_type(exchange.as_ptr(), raw_msg.as_ptr())
+        );
         assert_eq!(trade.price, 58570.1);
         assert!(approx_eq!(
             f64,
@@ -237,10 +242,9 @@ mod tests {
 
     #[test]
     fn test_parse_l2() {
+        let exchange = CString::new("binance").unwrap();
+        let raw_msg = CString::new(r#"{"stream":"btcusd_perp@depth@100ms","data":{"e":"depthUpdate","E":1622370862564,"T":1622370862553,"s":"BTCUSD_PERP","ps":"BTCUSD","U":127559587191,"u":127559588177,"pu":127559587113,"b":[["35365.9","1400"],["35425.8","561"]],"a":[["35817.8","7885"],["35818.7","307"]]}}"#).unwrap();
         let (json_ptr, json_str) = {
-            let exchange = CString::new("binance").unwrap();
-            let raw_msg = CString::new(r#"{"stream":"btcusd_perp@depth@100ms","data":{"e":"depthUpdate","E":1622370862564,"T":1622370862553,"s":"BTCUSD_PERP","ps":"BTCUSD","U":127559587191,"u":127559588177,"pu":127559587113,"b":[["35365.9","1400"],["35425.8","561"]],"a":[["35817.8","7885"],["35818.7","307"]]}}"#).unwrap();
-
             let json_ptr = parse_l2(
                 exchange.as_ptr(),
                 MarketType::InverseSwap,
@@ -263,6 +267,10 @@ mod tests {
         assert_eq!(orderbook.exchange, "binance");
         assert_eq!(orderbook.market_type, MarketType::InverseSwap);
         assert_eq!(orderbook.msg_type, MessageType::L2Event);
+        assert_eq!(
+            MessageType::L2Event,
+            get_msg_type(exchange.as_ptr(), raw_msg.as_ptr())
+        );
         assert_eq!(orderbook.asks.len(), 2);
         assert_eq!(orderbook.bids.len(), 2);
         assert!(!orderbook.snapshot);
@@ -278,10 +286,10 @@ mod tests {
 
     #[test]
     fn test_parse_funding_rate() {
-        let (json_ptr, json_str) = {
-            let exchange = CString::new("binance").unwrap();
-            let raw_msg = CString::new(r#"{"stream":"btcusd_perp@markPrice","data":{"e":"markPriceUpdate","E":1617309477000,"s":"BTCUSD_PERP","p":"59012.56007222","P":"58896.00503145","r":"0.00073689","T":1617321600000}}"#).unwrap();
+        let exchange = CString::new("binance").unwrap();
+        let raw_msg = CString::new(r#"{"stream":"btcusd_perp@markPrice","data":{"e":"markPriceUpdate","E":1617309477000,"s":"BTCUSD_PERP","p":"59012.56007222","P":"58896.00503145","r":"0.00073689","T":1617321600000}}"#).unwrap();
 
+        let (json_ptr, json_str) = {
             let json_ptr =
                 parse_funding_rate(exchange.as_ptr(), MarketType::InverseSwap, raw_msg.as_ptr());
             let json_c_str = unsafe {
@@ -300,6 +308,10 @@ mod tests {
         assert_eq!(rate.exchange, "binance");
         assert_eq!(rate.market_type, MarketType::InverseSwap);
         assert_eq!(rate.msg_type, MessageType::FundingRate);
+        assert_eq!(
+            MessageType::FundingRate,
+            get_msg_type(exchange.as_ptr(), raw_msg.as_ptr())
+        );
         assert_eq!(rate.pair, "BTC/USD".to_string());
         assert_eq!(rate.funding_rate, 0.00073689);
         assert_eq!(rate.funding_time, 1617321600000);

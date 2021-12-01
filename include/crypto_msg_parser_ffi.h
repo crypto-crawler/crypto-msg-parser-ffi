@@ -27,6 +27,11 @@ const char *extract_symbol(const char *exchange, MarketType market_type,
                            const char *msg);
 
 /**
+ * Infer the message type from the message.
+ */
+MessageType get_msg_type(const char *exchange, const char *msg);
+
+/**
  * Parse a raw trade message into a Vec<TradeMsg> and then convert to a JSON
  * string.
  */
