@@ -1,7 +1,7 @@
 /* Licensed under Apache-2.0 */
 
-#ifndef CRYPTO_MSG_PARSER_H_
-#define CRYPTO_MSG_PARSER_H_
+#ifndef CRYPTO_MSG_PARSER_FFI_H_
+#define CRYPTO_MSG_PARSER_FFI_H_
 
 /* Generated with cbindgen:0.20.0 */
 
@@ -56,4 +56,4 @@ void deallocate_string(const char *pointer);
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* CRYPTO_MSG_PARSER_H_ */
+#endif /* CRYPTO_MSG_PARSER_FFI_H_ */
