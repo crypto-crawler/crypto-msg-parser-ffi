@@ -38,7 +38,7 @@ const char *parse_trade(const char *exchange, MarketType market_type,
  * convert to a JSON string.
  */
 const char *parse_l2(const char *exchange, MarketType market_type,
-                     const char *msg, long long timestamp);
+                     const char *msg, int64_t timestamp);
 
 /**
  * Parse a raw funding rate message into a Vec<FundingRateMsg> and then convert

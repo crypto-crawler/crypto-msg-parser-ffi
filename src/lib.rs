@@ -1,9 +1,10 @@
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
 use crypto_market_type::MarketType;
 use crypto_msg_type::MessageType;
 
 use std::{
     ffi::{CStr, CString},
-    os::raw::{c_char, c_longlong},
+    os::raw::c_char,
 };
 
 /// Extract the symbol from the message.
@@ -104,7 +105,7 @@ pub extern "C" fn parse_l2(
     exchange: *const c_char,
     market_type: MarketType,
     msg: *const c_char,
-    timestamp: c_longlong,
+    timestamp: i64,
 ) -> *const c_char {
     let exchange_rust = unsafe {
         debug_assert!(!exchange.is_null());
@@ -118,7 +119,7 @@ pub extern "C" fn parse_l2(
     let timestamp_rust = if timestamp <= 0 {
         None
     } else {
-        Some(timestamp as i64)
+        Some(timestamp)
     };
 
     let result = std::panic::catch_unwind(|| {
@@ -191,6 +192,7 @@ pub extern "C" fn deallocate_string(pointer: *const c_char) {
 #[cfg(test)]
 mod tests {
     use crypto_market_type::MarketType;
+    use crypto_msg_type::MessageType;
 
     use super::{deallocate_string, parse_funding_rate, parse_l2, parse_trade};
     use float_cmp::approx_eq;
@@ -217,11 +219,8 @@ mod tests {
         let trade = &trades[0];
 
         assert_eq!(trade.exchange, "binance");
-        assert_eq!(
-            trade.market_type,
-            crypto_msg_parser::MarketType::InverseSwap
-        );
-        assert_eq!(trade.msg_type, crypto_msg_parser::MessageType::Trade);
+        assert_eq!(trade.market_type, MarketType::InverseSwap);
+        assert_eq!(trade.msg_type, MessageType::Trade);
         assert_eq!(trade.price, 58570.1);
         assert!(approx_eq!(
             f64,
@@ -262,11 +261,8 @@ mod tests {
         let orderbook = &orderbooks[0];
 
         assert_eq!(orderbook.exchange, "binance");
-        assert_eq!(
-            orderbook.market_type,
-            crypto_msg_parser::MarketType::InverseSwap
-        );
-        assert_eq!(orderbook.msg_type, crypto_msg_parser::MessageType::L2Event);
+        assert_eq!(orderbook.market_type, MarketType::InverseSwap);
+        assert_eq!(orderbook.msg_type, MessageType::L2Event);
         assert_eq!(orderbook.asks.len(), 2);
         assert_eq!(orderbook.bids.len(), 2);
         assert!(!orderbook.snapshot);
@@ -302,8 +298,8 @@ mod tests {
         let rate = &rates[0];
 
         assert_eq!(rate.exchange, "binance");
-        assert_eq!(rate.market_type, crypto_msg_parser::MarketType::InverseSwap);
-        assert_eq!(rate.msg_type, crypto_msg_parser::MessageType::FundingRate);
+        assert_eq!(rate.market_type, MarketType::InverseSwap);
+        assert_eq!(rate.msg_type, MessageType::FundingRate);
         assert_eq!(rate.pair, "BTC/USD".to_string());
         assert_eq!(rate.funding_rate, 0.00073689);
         assert_eq!(rate.funding_time, 1617321600000);
