@@ -24,8 +24,7 @@ pub extern "C" fn extract_symbol(
     };
 
     let result = std::panic::catch_unwind(|| {
-        if let Some(symbol) =
-            crypto_msg_parser::extract_symbol(exchange_rust, market_type, msg_rust)
+        if let Ok(symbol) = crypto_msg_parser::extract_symbol(exchange_rust, market_type, msg_rust)
         {
             let text = serde_json::to_string(&symbol).unwrap();
             let raw = CString::new(text).unwrap();
@@ -126,6 +125,42 @@ pub extern "C" fn parse_l2(
     let result = std::panic::catch_unwind(|| {
         if let Ok(orderbooks) =
             crypto_msg_parser::parse_l2(exchange_rust, market_type, msg_rust, timestamp_rust)
+        {
+            let text = serde_json::to_string(&orderbooks).unwrap();
+            let raw = CString::new(text).unwrap();
+            raw.into_raw() as *const c_char
+        } else {
+            std::ptr::null()
+        }
+    });
+    match result {
+        Ok(ptr) => ptr,
+        Err(err) => {
+            eprintln!("{:?}", err);
+            std::ptr::null()
+        }
+    }
+}
+
+/// Parse a level2 topk orderbook message into a Vec<OrderBookMsg>.
+#[no_mangle]
+pub extern "C" fn parse_l2_topk(
+    exchange: *const c_char,
+    market_type: MarketType,
+    msg: *const c_char,
+) -> *const c_char {
+    let exchange_rust = unsafe {
+        debug_assert!(!exchange.is_null());
+        CStr::from_ptr(exchange).to_str().unwrap()
+    };
+    let msg_rust = unsafe {
+        debug_assert!(!msg.is_null());
+        CStr::from_ptr(msg).to_str().unwrap()
+    };
+
+    let result = std::panic::catch_unwind(|| {
+        if let Ok(orderbooks) =
+            crypto_msg_parser::parse_l2_topk(exchange_rust, market_type, msg_rust)
         {
             let text = serde_json::to_string(&orderbooks).unwrap();
             let raw = CString::new(text).unwrap();
