@@ -26,6 +26,15 @@ const char *extract_symbol(const char *exchange,
                            const char *msg);
 
 /**
+ * Extract the timestamp from the message.
+ * Returns 0 if the message doesn't have a timestamp.
+ */
+int64_t extract_timestamp(const char *exchange,
+                          MarketType market_type,
+                          const char *msg,
+                          int64_t received_at);
+
+/**
  * Infer the message type from the message.
  */
 MessageType get_msg_type(const char *exchange, const char *msg);
@@ -43,7 +52,7 @@ const char *parse_trade(const char *exchange,
 const char *parse_l2(const char *exchange,
                      MarketType market_type,
                      const char *msg,
-                     int64_t timestamp);
+                     int64_t received_at);
 
 /**
  * Parse a level2 topk orderbook message into a Vec<OrderBookMsg>.

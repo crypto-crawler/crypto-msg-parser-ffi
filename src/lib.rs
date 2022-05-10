@@ -42,6 +42,50 @@ pub extern "C" fn extract_symbol(
     }
 }
 
+/// Extract the timestamp from the message.
+/// Returns 0 if the message doesn't have a timestamp.
+#[no_mangle]
+pub extern "C" fn extract_timestamp(
+    exchange: *const c_char,
+    market_type: MarketType,
+    msg: *const c_char,
+    received_at: i64,
+) -> i64 {
+    let exchange_rust = unsafe {
+        debug_assert!(!exchange.is_null());
+        CStr::from_ptr(exchange).to_str().unwrap()
+    };
+    let msg_rust = unsafe {
+        debug_assert!(!msg.is_null());
+        CStr::from_ptr(msg).to_str().unwrap()
+    };
+    let received_at_rust = if received_at <= 0 {
+        None
+    } else {
+        Some(received_at)
+    };
+
+    let result = std::panic::catch_unwind(|| {
+        if let Ok(timestamp) = crypto_msg_parser::extract_timestamp(
+            exchange_rust,
+            market_type,
+            msg_rust,
+            received_at_rust,
+        ) {
+            timestamp
+        } else {
+            0_i64
+        }
+    });
+    match result {
+        Ok(timestamp) => timestamp,
+        Err(err) => {
+            eprintln!("{:?}", err);
+            0_i64
+        }
+    }
+}
+
 /// Infer the message type from the message.
 #[no_mangle]
 pub extern "C" fn get_msg_type(exchange: *const c_char, msg: *const c_char) -> MessageType {
@@ -105,7 +149,7 @@ pub extern "C" fn parse_l2(
     exchange: *const c_char,
     market_type: MarketType,
     msg: *const c_char,
-    timestamp: i64,
+    received_at: i64,
 ) -> *const c_char {
     let exchange_rust = unsafe {
         debug_assert!(!exchange.is_null());
@@ -116,10 +160,10 @@ pub extern "C" fn parse_l2(
         CStr::from_ptr(msg).to_str().unwrap()
     };
 
-    let timestamp_rust = if timestamp <= 0 {
+    let timestamp_rust = if received_at <= 0 {
         None
     } else {
-        Some(timestamp)
+        Some(received_at)
     };
 
     let result = std::panic::catch_unwind(|| {
@@ -230,7 +274,10 @@ mod tests {
     use crypto_market_type::MarketType;
     use crypto_msg_type::MessageType;
 
-    use super::{deallocate_string, get_msg_type, parse_funding_rate, parse_l2, parse_trade};
+    use super::{
+        deallocate_string, extract_timestamp, get_msg_type, parse_funding_rate, parse_l2,
+        parse_trade,
+    };
     use float_cmp::approx_eq;
     use std::ffi::{CStr, CString};
 
@@ -352,5 +399,18 @@ mod tests {
         assert_eq!(rate.funding_time, 1617321600000);
 
         deallocate_string(json_ptr);
+    }
+
+    #[test]
+    fn test_extract_timestamp() {
+        let exchange = CString::new("binance").unwrap();
+        let raw_msg = CString::new(r#"{"stream":"btcusd_perp@depth@100ms","data":{"e":"depthUpdate","E":1622370862564,"T":1622370862553,"s":"BTCUSD_PERP","ps":"BTCUSD","U":127559587191,"u":127559588177,"pu":127559587113,"b":[["35365.9","1400"],["35425.8","561"]],"a":[["35817.8","7885"],["35818.7","307"]]}}"#).unwrap();
+        let timestamp = extract_timestamp(
+            exchange.as_ptr(),
+            MarketType::InverseSwap,
+            raw_msg.as_ptr(),
+            0,
+        );
+        assert_eq!(1622370862564, timestamp);
     }
 }
