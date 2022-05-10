@@ -43,13 +43,12 @@ pub extern "C" fn extract_symbol(
 }
 
 /// Extract the timestamp from the message.
-/// Returns 0 if the message doesn't have a timestamp.
+/// Returns 0 if the message doesn't have a timestamp, -1 if an error happens.
 #[no_mangle]
 pub extern "C" fn extract_timestamp(
     exchange: *const c_char,
     market_type: MarketType,
     msg: *const c_char,
-    received_at: i64,
 ) -> i64 {
     let exchange_rust = unsafe {
         debug_assert!(!exchange.is_null());
@@ -59,22 +58,14 @@ pub extern "C" fn extract_timestamp(
         debug_assert!(!msg.is_null());
         CStr::from_ptr(msg).to_str().unwrap()
     };
-    let received_at_rust = if received_at <= 0 {
-        None
-    } else {
-        Some(received_at)
-    };
 
     let result = std::panic::catch_unwind(|| {
-        if let Ok(timestamp) = crypto_msg_parser::extract_timestamp(
-            exchange_rust,
-            market_type,
-            msg_rust,
-            received_at_rust,
-        ) {
-            timestamp
+        if let Ok(timestamp) =
+            crypto_msg_parser::extract_timestamp(exchange_rust, market_type, msg_rust)
+        {
+            timestamp.unwrap_or_default()
         } else {
-            0_i64
+            -1 as i64
         }
     });
     match result {
@@ -405,12 +396,8 @@ mod tests {
     fn test_extract_timestamp() {
         let exchange = CString::new("binance").unwrap();
         let raw_msg = CString::new(r#"{"stream":"btcusd_perp@depth@100ms","data":{"e":"depthUpdate","E":1622370862564,"T":1622370862553,"s":"BTCUSD_PERP","ps":"BTCUSD","U":127559587191,"u":127559588177,"pu":127559587113,"b":[["35365.9","1400"],["35425.8","561"]],"a":[["35817.8","7885"],["35818.7","307"]]}}"#).unwrap();
-        let timestamp = extract_timestamp(
-            exchange.as_ptr(),
-            MarketType::InverseSwap,
-            raw_msg.as_ptr(),
-            0,
-        );
+        let timestamp =
+            extract_timestamp(exchange.as_ptr(), MarketType::InverseSwap, raw_msg.as_ptr());
         assert_eq!(1622370862564, timestamp);
     }
 }

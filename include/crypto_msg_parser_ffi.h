@@ -27,12 +27,11 @@ const char *extract_symbol(const char *exchange,
 
 /**
  * Extract the timestamp from the message.
- * Returns 0 if the message doesn't have a timestamp.
+ * Returns 0 if the message doesn't have a timestamp, -1 if an error happens.
  */
 int64_t extract_timestamp(const char *exchange,
                           MarketType market_type,
-                          const char *msg,
-                          int64_t received_at);
+                          const char *msg);
 
 /**
  * Infer the message type from the message.
