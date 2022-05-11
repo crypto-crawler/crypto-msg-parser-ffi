@@ -36,7 +36,10 @@ pub extern "C" fn extract_symbol(
     match result {
         Ok(ptr) => ptr,
         Err(err) => {
-            eprintln!("{:?}", err);
+            eprintln!(
+                "{}, {}, {}, error: {:?}",
+                exchange_rust, market_type, msg_rust, err
+            );
             std::ptr::null()
         }
     }
@@ -71,7 +74,10 @@ pub extern "C" fn extract_timestamp(
     match result {
         Ok(timestamp) => timestamp,
         Err(err) => {
-            eprintln!("{:?}", err);
+            eprintln!(
+                "{}, {}, {}, error: {:?}",
+                exchange_rust, market_type, msg_rust, err
+            );
             0_i64
         }
     }
@@ -128,7 +134,10 @@ pub extern "C" fn parse_trade(
     match result {
         Ok(ptr) => ptr,
         Err(err) => {
-            eprintln!("{:?}", err);
+            eprintln!(
+                "{}, {}, {}, error: {:?}",
+                exchange_rust, market_type, msg_rust, err
+            );
             std::ptr::null()
         }
     }
@@ -171,7 +180,10 @@ pub extern "C" fn parse_l2(
     match result {
         Ok(ptr) => ptr,
         Err(err) => {
-            eprintln!("{:?}", err);
+            eprintln!(
+                "{}, {}, {}, error: {:?}",
+                exchange_rust, market_type, msg_rust, err
+            );
             std::ptr::null()
         }
     }
@@ -207,7 +219,10 @@ pub extern "C" fn parse_l2_topk(
     match result {
         Ok(ptr) => ptr,
         Err(err) => {
-            eprintln!("{:?}", err);
+            eprintln!(
+                "{}, {}, {}, error: {:?}",
+                exchange_rust, market_type, msg_rust, err
+            );
             std::ptr::null()
         }
     }
@@ -243,7 +258,10 @@ pub extern "C" fn parse_funding_rate(
     match result {
         Ok(ptr) => ptr,
         Err(err) => {
-            eprintln!("{:?}", err);
+            eprintln!(
+                "{}, {}, {}, error: {:?}",
+                exchange_rust, market_type, msg_rust, err
+            );
             std::ptr::null()
         }
     }
