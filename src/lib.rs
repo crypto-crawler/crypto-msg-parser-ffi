@@ -39,9 +39,7 @@ pub extern "C" fn extract_symbol(
     match result {
         Ok(ptr) => ptr,
         Err(err) => {
-            eprintln!(
-                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
-            );
+            eprintln!("{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}");
             std::ptr::null()
         }
     }
@@ -77,9 +75,7 @@ pub extern "C" fn extract_timestamp(
     match result {
         Ok(timestamp) => timestamp,
         Err(err) => {
-            eprintln!(
-                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
-            );
+            eprintln!("{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}");
             0_i64
         }
     }
@@ -136,9 +132,7 @@ pub extern "C" fn parse_trade(
     match result {
         Ok(ptr) => ptr,
         Err(err) => {
-            eprintln!(
-                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
-            );
+            eprintln!("{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}");
             std::ptr::null()
         }
     }
@@ -181,9 +175,7 @@ pub extern "C" fn parse_l2(
     match result {
         Ok(ptr) => ptr,
         Err(err) => {
-            eprintln!(
-                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
-            );
+            eprintln!("{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}");
             std::ptr::null()
         }
     }
@@ -225,9 +217,7 @@ pub extern "C" fn parse_l2_topk(
     match result {
         Ok(ptr) => ptr,
         Err(err) => {
-            eprintln!(
-                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
-            );
+            eprintln!("{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}");
             std::ptr::null()
         }
     }
@@ -272,9 +262,7 @@ pub extern "C" fn parse_funding_rate(
     match result {
         Ok(ptr) => ptr,
         Err(err) => {
-            eprintln!(
-                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
-            );
+            eprintln!("{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}");
             std::ptr::null()
         }
     }
