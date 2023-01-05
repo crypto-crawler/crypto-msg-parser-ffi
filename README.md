@@ -1,26 +1,8 @@
 # crypto-msg-parser-ffi
 
-[![](https://img.shields.io/github/workflow/status/soulmachine/crypto-msg-parser-ffi/CI/main)](https://github.com/soulmachine/crypto-msg-parser-ffi/actions?query=branch%3Amain)
+[![](https://img.shields.io/github/actions/workflow/status/soulmachine/crypto-msg-parser-ffi/ci.yml?branch=main)](https://github.com/soulmachine/crypto-msg-parser-ffi/actions?query=branch%3Amain)
 
 FFI bindings for the [crypto-msg-parser](https://crates.io/crates/crypto-msg-parser) crate.
-
-## Build
-
-On Mac OS X:
-
-```bash
-cargo build --release
-```
-
-For Windows and Linux:
-
-```bash
-cargo install cross
-
-cross build --target x86_64-unknown-linux-gnu --release
-
-cross build --target x86_64-pc-windows-gnu --release
-```
 
 ## References
 
