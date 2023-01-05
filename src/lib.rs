@@ -40,8 +40,7 @@ pub extern "C" fn extract_symbol(
         Ok(ptr) => ptr,
         Err(err) => {
             eprintln!(
-                "{}, {}, {}, error: {:?}",
-                exchange_rust, market_type, msg_rust, err
+                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
             );
             std::ptr::null()
         }
@@ -72,15 +71,14 @@ pub extern "C" fn extract_timestamp(
         {
             timestamp.unwrap_or_default()
         } else {
-            -1 as i64
+            -1_i64
         }
     });
     match result {
         Ok(timestamp) => timestamp,
         Err(err) => {
             eprintln!(
-                "{}, {}, {}, error: {:?}",
-                exchange_rust, market_type, msg_rust, err
+                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
             );
             0_i64
         }
@@ -104,7 +102,7 @@ pub extern "C" fn get_msg_type(exchange: *const c_char, msg: *const c_char) -> M
     match result {
         Ok(msg_type) => msg_type,
         Err(err) => {
-            eprintln!("{:?}", err);
+            eprintln!("{err:?}");
             MessageType::Other
         }
     }
@@ -139,8 +137,7 @@ pub extern "C" fn parse_trade(
         Ok(ptr) => ptr,
         Err(err) => {
             eprintln!(
-                "{}, {}, {}, error: {:?}",
-                exchange_rust, market_type, msg_rust, err
+                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
             );
             std::ptr::null()
         }
@@ -185,8 +182,7 @@ pub extern "C" fn parse_l2(
         Ok(ptr) => ptr,
         Err(err) => {
             eprintln!(
-                "{}, {}, {}, error: {:?}",
-                exchange_rust, market_type, msg_rust, err
+                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
             );
             std::ptr::null()
         }
@@ -230,8 +226,7 @@ pub extern "C" fn parse_l2_topk(
         Ok(ptr) => ptr,
         Err(err) => {
             eprintln!(
-                "{}, {}, {}, error: {:?}",
-                exchange_rust, market_type, msg_rust, err
+                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
             );
             std::ptr::null()
         }
@@ -278,8 +273,7 @@ pub extern "C" fn parse_funding_rate(
         Ok(ptr) => ptr,
         Err(err) => {
             eprintln!(
-                "{}, {}, {}, error: {:?}",
-                exchange_rust, market_type, msg_rust, err
+                "{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}"
             );
             std::ptr::null()
         }
