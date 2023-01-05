@@ -8,6 +8,9 @@ use std::{
 };
 
 /// Extract the symbol from the message.
+///
+/// * If the message contains multiple symbols, `ALL` is returned;
+/// * If the message has no symbol, `NONE` is returned.
 #[no_mangle]
 pub extern "C" fn extract_symbol(
     exchange: *const c_char,
@@ -46,6 +49,7 @@ pub extern "C" fn extract_symbol(
 }
 
 /// Extract the timestamp from the message.
+///
 /// Returns 0 if the message doesn't have a timestamp, -1 if an error happens.
 #[no_mangle]
 pub extern "C" fn extract_timestamp(
@@ -195,6 +199,7 @@ pub extern "C" fn parse_l2_topk(
     exchange: *const c_char,
     market_type: MarketType,
     msg: *const c_char,
+    received_at: i64,
 ) -> *const c_char {
     let exchange_rust = unsafe {
         debug_assert!(!exchange.is_null());
@@ -204,10 +209,15 @@ pub extern "C" fn parse_l2_topk(
         debug_assert!(!msg.is_null());
         CStr::from_ptr(msg).to_str().unwrap()
     };
+    let timestamp_rust = if received_at <= 0 {
+        None
+    } else {
+        Some(received_at)
+    };
 
     let result = std::panic::catch_unwind(|| {
         if let Ok(orderbooks) =
-            crypto_msg_parser::parse_l2_topk(exchange_rust, market_type, msg_rust)
+            crypto_msg_parser::parse_l2_topk(exchange_rust, market_type, msg_rust, timestamp_rust)
         {
             let text = serde_json::to_string(&orderbooks).unwrap();
             let raw = CString::new(text).unwrap();
@@ -234,6 +244,7 @@ pub extern "C" fn parse_funding_rate(
     exchange: *const c_char,
     market_type: MarketType,
     msg: *const c_char,
+    received_at: i64,
 ) -> *const c_char {
     let exchange_rust = unsafe {
         debug_assert!(!exchange.is_null());
@@ -243,11 +254,19 @@ pub extern "C" fn parse_funding_rate(
         debug_assert!(!msg.is_null());
         CStr::from_ptr(msg).to_str().unwrap()
     };
+    let timestamp_rust = if received_at <= 0 {
+        None
+    } else {
+        Some(received_at)
+    };
 
     let result = std::panic::catch_unwind(|| {
-        if let Ok(rates) =
-            crypto_msg_parser::parse_funding_rate(exchange_rust, market_type, msg_rust)
-        {
+        if let Ok(rates) = crypto_msg_parser::parse_funding_rate(
+            exchange_rust,
+            market_type,
+            msg_rust,
+            timestamp_rust,
+        ) {
             let text = serde_json::to_string(&rates).unwrap();
             let raw = CString::new(text).unwrap();
             raw.into_raw() as *const c_char
@@ -306,7 +325,7 @@ mod tests {
             (json_ptr, json_c_str.to_str().unwrap())
         };
 
-        let trades = serde_json::from_str::<Vec<crypto_msg_parser::TradeMsg>>(json_str).unwrap();
+        let trades = serde_json::from_str::<Vec<crypto_message::TradeMsg>>(json_str).unwrap();
         assert_eq!(trades.len(), 1);
         let trade = &trades[0];
 
@@ -326,7 +345,7 @@ mod tests {
         ));
         assert_eq!(trade.quantity_quote, 5800.0);
         assert_eq!(trade.quantity_contract, Some(58.0));
-        assert_eq!(trade.side, crypto_msg_parser::TradeSide::Sell);
+        assert_eq!(trade.side, crypto_message::TradeSide::Sell);
 
         deallocate_string(json_ptr);
     }
@@ -351,7 +370,7 @@ mod tests {
         };
 
         let orderbooks =
-            serde_json::from_str::<Vec<crypto_msg_parser::OrderBookMsg>>(json_str).unwrap();
+            serde_json::from_str::<Vec<crypto_message::OrderBookMsg>>(json_str).unwrap();
         assert_eq!(orderbooks.len(), 1);
         let orderbook = &orderbooks[0];
 
@@ -365,7 +384,7 @@ mod tests {
         assert_eq!(orderbook.asks.len(), 2);
         assert_eq!(orderbook.bids.len(), 2);
         assert!(!orderbook.snapshot);
-        assert_eq!(orderbook.timestamp, 1622370862553);
+        assert_eq!(orderbook.timestamp, 1622370862564);
 
         assert_eq!(orderbook.bids[0].price, 35365.9);
         assert_eq!(orderbook.bids[0].quantity_contract, Some(1400.0));
@@ -381,8 +400,12 @@ mod tests {
         let raw_msg = CString::new(r#"{"stream":"btcusd_perp@markPrice","data":{"e":"markPriceUpdate","E":1617309477000,"s":"BTCUSD_PERP","p":"59012.56007222","P":"58896.00503145","r":"0.00073689","T":1617321600000}}"#).unwrap();
 
         let (json_ptr, json_str) = {
-            let json_ptr =
-                parse_funding_rate(exchange.as_ptr(), MarketType::InverseSwap, raw_msg.as_ptr());
+            let json_ptr = parse_funding_rate(
+                exchange.as_ptr(),
+                MarketType::InverseSwap,
+                raw_msg.as_ptr(),
+                -1,
+            );
             let json_c_str = unsafe {
                 debug_assert!(!json_ptr.is_null());
                 CStr::from_ptr(json_ptr)
@@ -391,8 +414,7 @@ mod tests {
             (json_ptr, json_c_str.to_str().unwrap())
         };
 
-        let rates =
-            serde_json::from_str::<Vec<crypto_msg_parser::FundingRateMsg>>(json_str).unwrap();
+        let rates = serde_json::from_str::<Vec<crypto_message::FundingRateMsg>>(json_str).unwrap();
         assert_eq!(rates.len(), 1);
         let rate = &rates[0];
 

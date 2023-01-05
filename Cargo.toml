@@ -1,6 +1,6 @@
 [package]
 name = "crypto-msg-parser-ffi"
-version = "2.1.8"
+version = "0.0.1"
 authors = ["soulmachine <soulmachine@gmail.com>"]
 edition = "2021"
 
@@ -8,16 +8,17 @@ edition = "2021"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-crypto-msg-parser = "2.1.8"
-crypto-market-type = "1.0.9"
-crypto-msg-type = "1.0.6"
-serde_json = "1.0.81"
+crypto-market-type = "1.1.5"
+crypto-message = "1.1.16"
+crypto-msg-parser = "2.8.16"
+crypto-msg-type = "1.0.11"
+serde_json = "1.0.91"
 
 [dev-dependencies]
 float-cmp = "0.9.0"
 
 [build-dependencies]
-cbindgen = "0.23.0"
+cbindgen = "0.24.3"
 
 [profile.release]
 lto = true
