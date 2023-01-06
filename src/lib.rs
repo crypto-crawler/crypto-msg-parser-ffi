@@ -371,8 +371,8 @@ mod tests {
     use crypto_msg_type::MessageType;
 
     use super::{
-        deallocate_string, extract_timestamp, get_msg_type, parse_funding_rate, parse_l2,
-        parse_trade,
+        deallocate_string, extract_timestamp, get_msg_type, parse_bbo, parse_candlestick,
+        parse_funding_rate, parse_l2, parse_trade,
     };
     use float_cmp::approx_eq;
     use std::ffi::{CStr, CString};
@@ -463,6 +463,47 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_bbo() {
+        let exchange = CString::new("binance").unwrap();
+        let raw_msg = CString::new(r#"{"stream":"ethusdt@bookTicker","data":{"e":"bookTicker","u":1553413152520,"s":"ETHUSDT","b":"1778.54","B":"15.164","a":"1778.55","A":"7.289","T":1653817855284,"E":1653817855289}}"#).unwrap();
+        let (json_ptr, json_str) = {
+            let json_ptr = parse_bbo(
+                exchange.as_ptr(),
+                MarketType::LinearSwap,
+                raw_msg.as_ptr(),
+                0,
+            );
+            let json_c_str = unsafe {
+                debug_assert!(!json_ptr.is_null());
+                CStr::from_ptr(json_ptr)
+            };
+
+            (json_ptr, json_c_str.to_str().unwrap())
+        };
+
+        let arr = serde_json::from_str::<Vec<crypto_message::BboMsg>>(json_str).unwrap();
+        assert_eq!(arr.len(), 1);
+        let bbo_msg = &arr[0];
+
+        assert_eq!(MessageType::BBO, bbo_msg.msg_type);
+        assert_eq!("ETHUSDT", bbo_msg.symbol);
+        assert_eq!(1653817855289, bbo_msg.timestamp);
+        assert_eq!(Some(1553413152520), bbo_msg.id);
+
+        assert_eq!(1778.55, bbo_msg.ask_price);
+        assert_eq!(7.289, bbo_msg.ask_quantity_base);
+        assert_eq!(1778.55 * 7.289, bbo_msg.ask_quantity_quote);
+        assert_eq!(Some(7.289), bbo_msg.ask_quantity_contract);
+
+        assert_eq!(1778.54, bbo_msg.bid_price);
+        assert_eq!(15.164, bbo_msg.bid_quantity_base);
+        assert_eq!(1778.54 * 15.164, bbo_msg.bid_quantity_quote);
+        assert_eq!(Some(15.164), bbo_msg.bid_quantity_contract);
+
+        deallocate_string(json_ptr);
+    }
+
+    #[test]
     fn test_parse_funding_rate() {
         let exchange = CString::new("binance").unwrap();
         let raw_msg = CString::new(r#"{"stream":"btcusd_perp@markPrice","data":{"e":"markPriceUpdate","E":1617309477000,"s":"BTCUSD_PERP","p":"59012.56007222","P":"58896.00503145","r":"0.00073689","T":1617321600000}}"#).unwrap();
@@ -507,5 +548,43 @@ mod tests {
         let timestamp =
             extract_timestamp(exchange.as_ptr(), MarketType::InverseSwap, raw_msg.as_ptr());
         assert_eq!(1622370862564, timestamp);
+    }
+
+    #[test]
+    fn test_parse_candlestick() {
+        let exchange = CString::new("binance").unwrap();
+        let raw_msg = CString::new(r#"{"stream":"btcusdt@kline_1M","data":{"e":"kline","E":1653819041520,"s":"BTCUSDT","k":{"t":1651363200000,"T":1654041599999,"s":"BTCUSDT","i":"1M","f":2172726276,"L":2301806561,"o":"37614.40","c":"29075.50","h":"40071.70","l":"26631.00","v":"13431981.671","n":129025447,"x":false,"q":"423075730671.12853","V":"6700065.176","Q":"211000435586.65000","B":"0"}}}"#).unwrap();
+        let (json_ptr, json_str) = {
+            let json_ptr = parse_candlestick(
+                exchange.as_ptr(),
+                MarketType::LinearSwap,
+                raw_msg.as_ptr(),
+                -1,
+            );
+            let json_c_str = unsafe {
+                debug_assert!(!json_ptr.is_null());
+                CStr::from_ptr(json_ptr)
+            };
+
+            (json_ptr, json_c_str.to_str().unwrap())
+        };
+
+        let arr = serde_json::from_str::<Vec<crypto_message::CandlestickMsg>>(json_str).unwrap();
+        assert_eq!(arr.len(), 1);
+        let candlestick_msg = &arr[0];
+
+        assert_eq!("BTCUSDT", candlestick_msg.symbol);
+        assert_eq!(1653819041520, candlestick_msg.timestamp);
+        assert_eq!("1M", candlestick_msg.period);
+        assert_eq!(1651363200, candlestick_msg.begin_time);
+
+        assert_eq!(37614.40, candlestick_msg.open);
+        assert_eq!(40071.70, candlestick_msg.high);
+        assert_eq!(26631.0, candlestick_msg.low);
+        assert_eq!(29075.5, candlestick_msg.close);
+        assert_eq!(13431981.671, candlestick_msg.volume);
+        assert_eq!(Some(423075730671.12853), candlestick_msg.quote_volume);
+
+        deallocate_string(json_ptr);
     }
 }
