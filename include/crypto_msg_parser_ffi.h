@@ -58,12 +58,20 @@ const char *parse_l2(const char *exchange,
                      int64_t received_at);
 
 /**
- * Parse a level2 topk orderbook message into a Vec<OrderBookMsg>.
+ * Parse a level2 topk orderbook message into a Vec<OrderBookMsg> and then convert to a JSON string.
  */
 const char *parse_l2_topk(const char *exchange,
                           MarketType market_type,
                           const char *msg,
                           int64_t received_at);
+
+/**
+ * Parse a BBO(best bid&offer) message into a Vec<BboMsg> and then convert to a JSON string.
+ */
+const char *parse_bbo(const char *exchange,
+                      MarketType market_type,
+                      const char *msg,
+                      int64_t received_at);
 
 /**
  * Parse a raw funding rate message into a Vec<FundingRateMsg> and then convert to a JSON string.
@@ -72,6 +80,14 @@ const char *parse_funding_rate(const char *exchange,
                                MarketType market_type,
                                const char *msg,
                                int64_t received_at);
+
+/**
+ * Parse a raw candlestick message into a Vec<CandlestickMsg> and then convert to a JSON string.
+ */
+const char *parse_candlestick(const char *exchange,
+                              MarketType market_type,
+                              const char *msg,
+                              int64_t received_at);
 
 /**
  * Deallocate a string.

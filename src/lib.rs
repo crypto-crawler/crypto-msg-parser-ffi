@@ -154,7 +154,6 @@ pub extern "C" fn parse_l2(
         debug_assert!(!msg.is_null());
         CStr::from_ptr(msg).to_str().unwrap()
     };
-
     let timestamp_rust = if received_at <= 0 {
         None
     } else {
@@ -181,7 +180,7 @@ pub extern "C" fn parse_l2(
     }
 }
 
-/// Parse a level2 topk orderbook message into a Vec<OrderBookMsg>.
+/// Parse a level2 topk orderbook message into a Vec<OrderBookMsg> and then convert to a JSON string.
 #[no_mangle]
 pub extern "C" fn parse_l2_topk(
     exchange: *const c_char,
@@ -208,6 +207,48 @@ pub extern "C" fn parse_l2_topk(
             crypto_msg_parser::parse_l2_topk(exchange_rust, market_type, msg_rust, timestamp_rust)
         {
             let text = serde_json::to_string(&orderbooks).unwrap();
+            let raw = CString::new(text).unwrap();
+            raw.into_raw() as *const c_char
+        } else {
+            std::ptr::null()
+        }
+    });
+    match result {
+        Ok(ptr) => ptr,
+        Err(err) => {
+            eprintln!("{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}");
+            std::ptr::null()
+        }
+    }
+}
+
+/// Parse a BBO(best bid&offer) message into a Vec<BboMsg> and then convert to a JSON string.
+#[no_mangle]
+pub extern "C" fn parse_bbo(
+    exchange: *const c_char,
+    market_type: MarketType,
+    msg: *const c_char,
+    received_at: i64,
+) -> *const c_char {
+    let exchange_rust = unsafe {
+        debug_assert!(!exchange.is_null());
+        CStr::from_ptr(exchange).to_str().unwrap()
+    };
+    let msg_rust = unsafe {
+        debug_assert!(!msg.is_null());
+        CStr::from_ptr(msg).to_str().unwrap()
+    };
+    let timestamp_rust = if received_at <= 0 {
+        None
+    } else {
+        Some(received_at)
+    };
+
+    let result = std::panic::catch_unwind(|| {
+        if let Ok(msgs) =
+            crypto_msg_parser::parse_bbo(exchange_rust, market_type, msg_rust, timestamp_rust)
+        {
+            let text = serde_json::to_string(&msgs).unwrap();
             let raw = CString::new(text).unwrap();
             raw.into_raw() as *const c_char
         } else {
@@ -253,6 +294,51 @@ pub extern "C" fn parse_funding_rate(
             timestamp_rust,
         ) {
             let text = serde_json::to_string(&rates).unwrap();
+            let raw = CString::new(text).unwrap();
+            raw.into_raw() as *const c_char
+        } else {
+            std::ptr::null()
+        }
+    });
+    match result {
+        Ok(ptr) => ptr,
+        Err(err) => {
+            eprintln!("{exchange_rust}, {market_type}, {msg_rust}, error: {err:?}");
+            std::ptr::null()
+        }
+    }
+}
+
+/// Parse a raw candlestick message into a Vec<CandlestickMsg> and then convert to a JSON string.
+#[no_mangle]
+pub extern "C" fn parse_candlestick(
+    exchange: *const c_char,
+    market_type: MarketType,
+    msg: *const c_char,
+    received_at: i64,
+) -> *const c_char {
+    let exchange_rust = unsafe {
+        debug_assert!(!exchange.is_null());
+        CStr::from_ptr(exchange).to_str().unwrap()
+    };
+    let msg_rust = unsafe {
+        debug_assert!(!msg.is_null());
+        CStr::from_ptr(msg).to_str().unwrap()
+    };
+    let timestamp_rust = if received_at <= 0 {
+        None
+    } else {
+        Some(received_at)
+    };
+
+    let result = std::panic::catch_unwind(|| {
+        if let Ok(msgs) = crypto_msg_parser::parse_candlestick(
+            exchange_rust,
+            market_type,
+            msg_rust,
+            timestamp_rust,
+        ) {
+            let text = serde_json::to_string(&msgs).unwrap();
             let raw = CString::new(text).unwrap();
             raw.into_raw() as *const c_char
         } else {
